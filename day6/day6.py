@@ -33,7 +33,6 @@ def trace_path(grid):
     for i, line in enumerate(grid):
         for j, ch in enumerate(line):
             if ch in guard:
-                print(f"Found the guard at ({i}, {j})")
                 gi, gj = i, j
             if ch == "#":
                 obstacles.append(Obstacle(i, j))
@@ -42,16 +41,14 @@ def trace_path(grid):
     on_grid = True
     if grid[gi][gj] not in guard:
         print(f"*** Error: Could not find the guard at the start!! ***")
+        raise AttributeError("No guard")
         on_grid = False
-
-    print(f"Found {len(obstacles)} obstacles")
 
     obstacles_hit = []
     while on_grid:
         grid, gi, gj, on_grid, obs = step(gi, gj, grid)
         if obs:
             if obs in obstacles_hit:
-                print(f"Loop found!! We have hit twice into {obs}")
                 raise ValueError("Loop!")
             obstacles_hit.append(obs)
 
@@ -76,7 +73,7 @@ def step(i, j, grid):
         return grid, i, j, False, obs
 
     if new_i < 0 or new_i >= c or new_j < 0 or new_j >= r:
-        print(f"Guard exited the grid at ({new_i}, {new_j})")
+        #print(f"Guard exited the grid at ({new_i}, {new_j})")
         return grid, new_i, new_j, False, obs
 
     if grid[new_i][new_j] == "#":
@@ -94,128 +91,59 @@ def step(i, j, grid):
     return grid, new_i, new_j, True, obs
 
 
-with open("d6_test.txt", "r") as f:
+#with open("d6_test.txt", "r") as f:
+with open("d6_input.txt", "r") as f:
     lines = f.readlines()
 
 grid = [list(line.strip()) for line in lines]
-for row in grid:
-    print("".join(row))
-
-grid, obstacles, obstacles_hit = trace_path(grid)
-
-print(f"Finished")
-for row in grid:
-    print("".join(row))
-
-steps = sum([1 if ch in guard else 0 for row in grid for ch in row])
-print(f"Steps == {steps}")
-
-print(f"{len(obstacles_hit)} obstacles hit by guard")
-
-def find_fourth(three_obs):
-    #   .a....
-    #   .+--+b
-    #   .|..|.
-    #   d+--+.
-    #   ....c.
-    three_obs = sorted(three_obs, key=lambda x: x.i)
-    # Becomes abdc, missing one
-
-    a, b, c, d = None, None, None, None
-    # We could have a, b, c: place d
-    # a, b, d: place c
-    # a, c, d: place b
-    # b, c, d: place a
-    if three_obs[0].i == (three_obs[1].i-1) and \
-       three_obs[0].j < three_obs[1].j and \
-       three_obs[1].j == (three_obs[2].j+1) and \
-       three_obs[1].i < three_obs[2].i:
-        a = three_obs[0]
-        b = three_obs[1]
-        c = three_obs[2]
-        print(three_obs, a, b, c, None)
-    elif three_obs[0].i == (three_obs[1].i-1) and \
-         three_obs[0].j > three_obs[2].j and \
-         three_obs[2].j == (three_obs[0].j-1) and \
-         three_obs[2].i > three_obs[1].i:
-        a = three_obs[0]
-        b = three_obs[1]
-        d = three_obs[2]
-        print(three_obs, a, b, None, d)
-    elif three_obs[0].j == (three_obs[1].j+1) and \
-         three_obs[0].i < three_obs[2].i and \
-         three_obs[1].i == (three_obs[2].i-1) and \
-         three_obs[1].j < three_obs[2].j:
-        a = three_obs[0]
-        d = three_obs[1]
-        c = three_obs[2]
-        print(three_obs, a, None, c, d)
-    elif three_obs[0].j == (three_obs[2].j+1) and \
-         three_obs[0].i < three_obs[1].i and \
-         three_obs[1].i == (three_obs[2].i-1) and \
-         three_obs[1].j < three_obs[2].j:
-        b = three_obs[0]
-        d = three_obs[1]
-        c = three_obs[2]
-        print(three_obs, None, b, c, d)
-    else:
-        # Can't place
-        return None
-
-    # Now place
-    if not a:
-        obs = Obstacle(b.i-1, d.j+1)
-        print(f"Placing a at {obs}")
-    elif not b:
-        obs = Obstacle(a.i+1, c.j+1)
-        print(f"Placing b at {obs}")
-    elif not c:
-        obs = Obstacle(d.i+1, b.j-1)
-        print(f"Placing c at {obs}")
-    elif not d:
-        obs = Obstacle(c.i-1, a.j-1)
-        print(f"Placing d at {obs}")
-
-    # Last step: is there a complete path? Or do other obstacles
-    # block the way? Make a new grid with the obstacle in place.
-    grid = make_blank_grid(lines)
-    grid[obs.i][obs.j] = "#"
-    if not a: # d exists, so place guard next to d
-        grid[d.i][d.j+1] = "^"
-    else: # a exists, so place under a
-        grid[a.i+1][a.j] = ">"
-    try:
-        grid, _, obstacles_hit = trace_path(grid)
-        print(f"--> No loop, so drop obstacle {obs}")
-        for row in grid:
-            print("".join(row))
-    except ValueError:
-        # If we hit a loop exception, we completed the path!
-        print(f"Valid new object at {obs}")
-        return obs
-
-    # Otherwise, we didn't complete the path
-    return None
+#for row in grid:
+#    print("".join(row))
 
 
+# Reset the grid and try every position in the guard's path
+base_grid = [list(line.strip()) for line in lines]
+gi, gj = 0, 0
+for i, line in enumerate(base_grid):
+    for j, ch in enumerate(line):
+        if ch in guard:
+            gi, gj = i, j
+on_grid = True
+new_obs = []
+while on_grid:
+    future_grid, new_i, new_j, new_on_grid, _ = step(gi, gj, base_grid)
+    #print(gi, gj, new_i, new_j, on_grid)
+    if new_on_grid and (new_i != gi or new_j != gj):
+        # If coords are the same, we've hit an obstacle already. Step again.
+        #print(f"Testing object at ({new_i}, {new_j})")
+        # Make a blank grid
+        hypo_grid = make_blank_grid(lines)
+        # Place the guard at gi, gj in same heading
+        hypo_grid[gi][gj] = base_grid[gi][gj]
+        # Place an obstacle at new_i, new_j
+        hypo_grid[new_i][new_j] = "#"
+        #for row in hypo_grid:
+        #    print("".join(row))
+        # trace_path
+        try:
+            _, _, _ = trace_path(hypo_grid)
+            #print(f"--> No loop, so drop obstacle ({new_i},{new_j})")
+        except ValueError:
+            # If we hit a loop exception, we completed the path!
+            obs = Obstacle(new_i, new_j)
+            #print(f"Valid new object at {obs}")
+            new_obs.append(obs)
+            #for row in hypo_grid:
+            #    print("".join(row))
+    # Actually advance the guard on the base grid
+    base_grid = future_grid
+    gi, gj = new_i, new_j
+    on_grid = new_on_grid
+    #print(f"*** After testing, true grid is ***")
+    #for row in base_grid:
+    #    print("".join(row))
 
-possibles = []
-for a, b, c in itertools.combinations(obstacles, 3):
-    place = find_fourth([a, b, c])
-    if place:
-        print(place)
-        possibles.append(place)
 
-print("Possible objects to place:")
-for p in possibles:
-    print(p)
-"""
-# Weed out any dups
-uniq = []
-for p in possibles:
-    match = [1 for u in uniq if p.i==u.i and p.j==u.j]
-    if len(match) == 0:
-        uniq.append(p)
+print(f"Possible objects to place: {len(new_obs)}")
+#for p in new_obs:
+#    print(p)
 
-print(f"{len(uniq)} possible new objects to place")
-"""
