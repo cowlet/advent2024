@@ -29,42 +29,34 @@ def apply_rules(stone):
     else:
         yield create_stone(stone.value_i * 2024)
 
-def count(stones):
-    if not isinstance(stones, list):
-        return 1
-    return sum([count(s) for s in stones])
-
-
 
 with open("d11_input.txt", "r") as f:
 #with open("d11_test.txt", "r") as f:
     line = f.read().strip()
 
-stones = [create_stone(int(v)) for v in line.split(" ")]
 BLINKS = 75
 
-def pursue_stone(stone, blinks=0):
-    if blinks >= BLINKS:
-        raise ValueError(f"Pursuing {blinks} blinks")
-    #if blinks%5 == 0:
-    #    print(f"* {blinks} *")
-    stored = [] # If it's our last blink, store these values
-    blink = apply_rules(stone)
-    for output_stone in blink:
-        if blinks == BLINKS-1:
-            stored.append(output_stone)
-        else:
-            stored.append(pursue_stone(output_stone, blinks=blinks+1))
-    return stored
-
-
-end = []
+stones = [create_stone(int(v)) for v in line.split(" ")]
+counts = {}
 for stone in stones:
-    print(f"*** Starting new stone {stone}")
-    final = pursue_stone(stone)
-    #print(f"Final output for stone {stone} is {final}")
-    end.append(count(final))
+    try:
+        counts[stone.value_i] += 1
+    except KeyError:
+        counts[stone.value_i] = 1
 
-print(f"{len(stones)} stones turns into {sum(end)} stones after {BLINKS} blinks")
-#print(end)
+
+for b in range(BLINKS):
+    new_counts = {}
+    for stone_v in counts:
+        blink = apply_rules(create_stone(stone_v))
+        for output_stone in blink:
+            try:
+                new_counts[output_stone.value_i] += (1*counts[stone_v])
+            except KeyError:
+                new_counts[output_stone.value_i] = (1*counts[stone_v])
+    counts = new_counts
+
+total = sum(counts.values())
+
+print(f"{len(stones)} stones turns into {total} stones after {BLINKS} blinks")
 
