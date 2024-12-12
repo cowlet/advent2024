@@ -43,7 +43,6 @@ class Region:
         for plot in self.plots:
             neighbours = sum([1 for o in self.plots if plot.isneighbour(o)])
             self.perimeter += (4-neighbours)
-            #print(f"Plot {plot} has {neighbours} neighbours, therefore {4-neighbours} fences")
 
         # Make connections
         for plot in self.plots:
@@ -55,51 +54,13 @@ class Region:
         ls = [p for p in plots if p._l_fence]
         rs = [p for p in plots if p._r_fence]
 
-        def find_discontinuities(container):
-            count = 0
-            for i, js in container.items():
-                count += 1 # must be at least one
-                if len(js) == 1:
-                    continue
-                vals = sorted(js)
-                for idx, v in enumerate(vals[:-1]):
-                    # discontinuities?
-                    if v+1 != vals[idx+1]:
-                        count += 1
-            return count
+        # Group into sides
+        top_sides = self._find_discontinuities(self._collect_rows(tops))
+        btm_sides = self._find_discontinuities(self._collect_rows(btms))
+        l_sides = self._find_discontinuities(self._collect_cols(ls))
+        r_sides = self._find_discontinuities(self._collect_cols(rs))
 
-        def collect_rows(fences):
-            rows = {}
-            for f in fences:
-                try:
-                    rows[f.i].append(f.j)
-                except KeyError:
-                    rows[f.i] = [f.j]
-            return rows
-
-        def collect_cols(fences):
-            cols = {}
-            for f in fences:
-                try:
-                    cols[f.j].append(f.i)
-                except KeyError:
-                    cols[f.j] = [f.i]
-            return cols
-
-        # Tops on the same row don't count, unless there's a discontinuity
-        rows = collect_rows(tops)
-        top_sides = find_discontinuities(rows)
-        #print(f"Top sides: {top_sides}")
-        rows = collect_rows(btms)
-        btm_sides = find_discontinuities(rows)
-        #print(f"Btm sides: {btm_sides}")
-        cols = collect_cols(ls)
-        l_sides = find_discontinuities(cols)
-        #print(f"Left sides: {l_sides}")
-        cols = collect_cols(rs)
-        r_sides = find_discontinuities(cols)
-        #print(f"Right sides: {r_sides}")
-
+        # Total from all cardinal directions
         self.sides = top_sides + btm_sides + l_sides + r_sides
 
 
@@ -110,6 +71,41 @@ class Region:
     def price(self):
         #return self.area * self.perimeter
         return self.area * self.sides
+
+    @staticmethod
+    def _find_discontinuities(container):
+        count = 0
+        for i, js in container.items():
+            count += 1 # must be at least one
+            if len(js) == 1:
+                continue
+            vals = sorted(js)
+            for idx, v in enumerate(vals[:-1]):
+                # discontinuities?
+                if v+1 != vals[idx+1]:
+                    count += 1
+        return count
+
+    @staticmethod
+    def _collect_rows(fences):
+        rows = {}
+        for f in fences:
+            try:
+                rows[f.i].append(f.j)
+            except KeyError:
+                rows[f.i] = [f.j]
+        return rows
+
+    @staticmethod
+    def _collect_cols(fences):
+        cols = {}
+        for f in fences:
+            try:
+                cols[f.j].append(f.i)
+            except KeyError:
+                cols[f.j] = [f.i]
+        return cols
+
 
 
 def find_first_neighbour(source, region):
