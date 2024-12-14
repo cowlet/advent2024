@@ -25,6 +25,9 @@ class Machine:
         return self.__str__()
 
     def solve(self):
+        ### TODO: convert representation to numpy
+        # 10M8390 is showing the same as 10M8400, prob bc
+        # 0.08 becomes significant when multiplying so many times
         # p = m*a + n*b; m and n must be whole numbers
         # min(3m + 1n); cost must be minimized
 
@@ -51,11 +54,13 @@ class Machine:
             m = self.px /(self.ax + self.bx*a_diff/b_diff) + \
                     self.bx*p_diff/(b_diff*self.ax + self.bx*a_diff)
 
+            print(m, round(m), math.isclose(m, round(m)))
             # Make sure we're on an int boundary
             if math.isclose(m, round(m)):
                 m = round(m)
 
             n = m*a_diff/b_diff - p_diff/b_diff
+            print(n, round(n), math.isclose(n, round(n)))
             if math.isclose(n, round(n)):
                 n = round(n)
         except ZeroDivisionError:
