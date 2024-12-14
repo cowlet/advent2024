@@ -12,9 +12,11 @@ class Machine:
         self.by = int(eq_b[1].split("+")[1])
         self.bc = 1
 
+        # Pt 2: these have an offset
+        offset = 10000000000000
         prize = line_p[7:].strip().split(", ")
-        self.px = int(prize[0].split("=")[1])
-        self.py = int(prize[1].split("=")[1])
+        self.px = int(prize[0].split("=")[1]) + offset
+        self.py = int(prize[1].split("=")[1]) + offset
 
     def __str__(self):
         return f"A: x+{self.ax}, y+{self.ay}, B: x+{self.bx}, y+{self.by}: " +\
@@ -57,45 +59,32 @@ class Machine:
             if math.isclose(n, round(n)):
                 n = round(n)
         except ZeroDivisionError:
-            # b_diff is zero, so we have to calc n first
-            # 8400 = 94m + 22n    (1)
-            # (94 - 34)m = (67 - 22)n + (8400 + 5400)
-            # 60m = 45n + 3000
-            # m = n45/60 + 3000/60
-            #
-            # 8400 = 94[ n45/60 + 3000/60] + 22n
-            # 8400 = [94*45/60 + 22]n + 94*3000/60
-            # n = 8400/[94*45/60 + 22] + 94*3000/60
             print(self)
-            print("-->", a_diff, b_diff, p_diff)
-            n = self.px/(self.ax*b_diff/a_diff + self.bx) + self.ax*p_diff/a_diff
-            print(n)
+            print(f"--> {a_diff}, {b_diff}, {p_diff}")
+            # b_diff is zero, so the equation for m simplifies
+            # m = n*b_diff/a_diff + p_diff/a_diff
+            #   = 0 + p_diff/a_diff
+            m = p_diff/a_diff
+            if math.isclose(m, round(m)):
+                m = round(m)
+
+            # Now n
+            # 8400 = 94m + 22n    (1)
+            # n = (8400 - 94m)/22
+            n = (self.px - self.ax*m) / self.bx
             if math.isclose(n, round(n)):
                 n = round(n)
 
-            m = n*b_diff/a_diff + p_diff/a_diff
-            print(m)
-            if math.isclose(m, round(m)):
-                m = round(m)
 
         if not isinstance(m, int) or not isinstance(n, int):
             # Invalid
             return None
 
-        #print(f"self.px = m * self.ax + n * self.bx")
-        #print(f"{self.px} = {m} * {self.ax} + {n} * {self.bx}")
-        #print(f"{m * self.ax} + {n * self.bx}")
-        #print(f"{m * self.ax + n * self.bx}")
-
-        #print(f"self.py = m * self.ay + n * self.by")
-        #print(f"{self.py} = {m} * {self.ay} + {n} * {self.by}")
-        #print(f"{m * self.ay} + {n * self.by}")
-        #print(f"{m * self.ay + n * self.by}")
         cost = 3*m + n
         return [m, n, cost]
 
-with open("d13_input.txt", "r") as f:
-#with open("d13_test.txt", "r") as f:
+#with open("d13_input.txt", "r") as f:
+with open("d13_test.txt", "r") as f:
     lines = f.readlines()
 
 results = []
