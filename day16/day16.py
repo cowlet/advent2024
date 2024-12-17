@@ -50,6 +50,12 @@ class Maze:
     def __repr__(self):
         return self.__str__()
 
+    def draw(self, deer):
+        output = copy.deepcopy(self.grid)
+        for m in deer.moves:
+            output[m[0]][m[1]] = m[2]
+        return "\n".join(["".join(row) for row in output])
+
     def _can_move(self, m, deer):
         # Speculative deer, not self.deer
         if m == ">":
@@ -88,8 +94,12 @@ class Maze:
 
     def solve(self):
 
-        all_best = self._greedy_find()
-        print(f"There are {len(all_best)} best paths with score {all_best[0].moves[-1][3]}")
+        some_best = self._greedy_find()
+        print(f"There are {len(some_best)} best paths with score {some_best[0].moves[-1][3]}")
+        # Look for all
+        all_best = self._all_matching(some_best[0].moves[-1][3])
+        print(f"Ends up as {len(all_best)} best paths")
+        #all_best = some_best
         uniques = []
         for s in all_best:
             for m in s.moves:
@@ -107,11 +117,14 @@ class Maze:
         solves = []
 
         while len(others) > 0:
+            # Still breadth first, since we know our target now
             cur, others = others[0], others[1:]
             if cur.moves[-1][3] > score:
-                print(f"Skipping definitely worse score {cur.moves[-1][3]}. "
-                      f"{len(others)} others")
+                #print(f"Skipping definitely worse score {cur.moves[-1][3]}. "
+                #      f"{len(others)} others")
                 continue
+            print(self.draw(cur))
+            print(len(others))
 
             moves = self._edit_moves(cur.moves[-1])
             for m in moves:
@@ -123,12 +136,25 @@ class Maze:
                     continue
                 d = cur.dup()
                 d.moves.append(next_c + [new_score])
-                # Doesn't matter if we've seen this pos before, as we know the
-                # final score answer and can measure against that.
-                others.append(d)
-                if d.at_end():
-                    #print(f"This is an end state! {d}")
-                    solves.append(d)
+                # If we've seen this pos before and its score is more than 3 turns
+                # higher, it can't possibly be better
+                seen = False
+                for other in others:
+                    oth_score = d.ever_in(other)
+                    if oth_score:
+                        if d.moves[-1][3]+3000 < oth_score:
+                            others.remove(other)
+                        # If d is higher score than oth, discard d (mark seen)
+                        elif d.moves[-1][3] > oth_score+3000:
+                            seen = True
+                        # else, they're even or potentially so. keep both
+                if not seen: # or seen but better score than before
+                    #if (d.moves[-1][0] == 7 and d.moves[-1][1] == 3):
+                    #    print(f"Appending {d.moves[-1]} to others")
+                    others.append(d)
+                    if d.at_end():
+                        #print(f"This is an end state! {d}")
+                        solves.append(d)
         return solves
 
     def _greedy_find(self):
@@ -139,12 +165,13 @@ class Maze:
         while len(others) > 0:
             # If we do depth first, we'll get the first solution faster!
             # Can then cut out a bunch of branches
-            #cur, others = others[0], others[1:]
-            cur, others = others[-1], others[:-1]
+            cur, others = others[0], others[1:]
+            #print(self.draw(cur))
+            #cur, others = others[-1], others[:-1]
             #print(len(others))
             if len(solves) > 0 and any([cur.moves[-1][3] > s.moves[-1][3] for s in solves]):
-                print(f"Skipping definitely worse score {cur.moves[-1][3]}. "
-                      f"{len(others)} others")
+                #print(f"Skipping definitely worse score {cur.moves[-1][3]}. "
+                #      f"{len(others)} others")
                 continue
             # Try moving in all directions except the one we just came from
             moves = self._edit_moves(cur.moves[-1])
@@ -170,7 +197,7 @@ class Maze:
                         #if (d.moves[-1][0] == 7 and d.moves[-1][1] == 3) or\
                         #    (other.moves[-1][0] == 7 and other.moves[-1][1] == 3):
                         #    print(f"Comparing {d.moves[-1]} to {other.moves[-1]}, {oth_score}")
-                        if d.moves[-1][3]+1000 < oth_score:
+                        if d.moves[-1][3] < oth_score:
                         #if d.moves[-1][3] < oth_score:
                         #if (d.moves[-1][3] < oth_score) or \
                         #        (d.moves[-1][3]+1000 == oth_score):
@@ -182,7 +209,7 @@ class Maze:
                         #elif d.moves[-1][3] > oth_score:
                         #elif (d.moves[-1][3] > oth_score) or \
                         #        (d.moves[-1][3] == oth_score+1000):
-                        elif d.moves[-1][3] > oth_score+1000:
+                        elif d.moves[-1][3] > oth_score:
                             #if (d.moves[-1][0] == 7 and d.moves[-1][1] == 3) or\
                             #    (other.moves[-1][0] == 7 and other.moves[-1][1] == 3):
                             #    print(f"Discarding d")
