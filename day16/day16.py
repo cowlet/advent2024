@@ -137,31 +137,29 @@ class Maze:
         solves = []
 
         while len(others) > 0:
-            cur, others = others[0], others[1:]
+            # If we do depth first, we'll get the first solution faster!
+            # Can then cut out a bunch of branches
+            #cur, others = others[0], others[1:]
+            cur, others = others[-1], others[:-1]
+            #print(len(others))
             if len(solves) > 0 and any([cur.moves[-1][3] > s.moves[-1][3] for s in solves]):
                 print(f"Skipping definitely worse score {cur.moves[-1][3]}. "
                       f"{len(others)} others")
                 continue
-            #print(f"Looking at deer path of length {len(cur.moves)}")
             # Try moving in all directions except the one we just came from
             moves = self._edit_moves(cur.moves[-1])
-            #print(f"For last move {cur.moves[-1]} we're looking at {moves}")
             for m in moves:
                 can, next_c = self._can_move(m, cur)
                 if not can:
                     continue
-                #print(f"Can move {m} to {next_c}")
                 d = cur.dup()
-                #print(f"Deer {d} is a dup of {cur}")
                 d.moves.append(next_c + [self._score(cur.moves[-1], next_c)])
-                #if next_c[0] == 9 and next_c[1] == 3:
-                #    print(f"----> At location! d is {d}")
+                #if d.moves[-1][0] == 7 and d.moves[-1][1] == 3:
+                #    print(f"---> Found a (7,3), maybe the first?")
                 # Is this a new location we haven't seen before?
                 seen = False
                 for other in others:
                     oth_score = d.ever_in(other)
-                    #if next_c[0] == 9 and next_c[1] == 3:
-                    #    print(f"oth_score is {oth_score} for other {other}")
                     if oth_score:
                         # d's last pos exists in other, so it's a dup
                         # However, it might be only 1 turn away, and
@@ -169,13 +167,30 @@ class Maze:
                         # Pad each check with a one-turn difference.
                         # If d is lower score than oth, discard oth
                         # Count how many turns! It's not just any
+                        #if (d.moves[-1][0] == 7 and d.moves[-1][1] == 3) or\
+                        #    (other.moves[-1][0] == 7 and other.moves[-1][1] == 3):
+                        #    print(f"Comparing {d.moves[-1]} to {other.moves[-1]}, {oth_score}")
                         if d.moves[-1][3]+1000 < oth_score:
+                        #if d.moves[-1][3] < oth_score:
+                        #if (d.moves[-1][3] < oth_score) or \
+                        #        (d.moves[-1][3]+1000 == oth_score):
+                            #if (d.moves[-1][0] == 7 and d.moves[-1][1] == 3) or\
+                            #    (other.moves[-1][0] == 7 and other.moves[-1][1] == 3):
+                            #    print(f"Removing other from others")
                             others.remove(other)
                         # If d is higher score than oth, discard d (mark seen)
+                        #elif d.moves[-1][3] > oth_score:
+                        #elif (d.moves[-1][3] > oth_score) or \
+                        #        (d.moves[-1][3] == oth_score+1000):
                         elif d.moves[-1][3] > oth_score+1000:
+                            #if (d.moves[-1][0] == 7 and d.moves[-1][1] == 3) or\
+                            #    (other.moves[-1][0] == 7 and other.moves[-1][1] == 3):
+                            #    print(f"Discarding d")
                             seen = True
                         # else, they're even or potentially so. keep both
                 if not seen: # or seen but better score than before
+                    #if (d.moves[-1][0] == 7 and d.moves[-1][1] == 3):
+                    #    print(f"Appending {d.moves[-1]} to others")
                     others.append(d)
                     if d.at_end():
                         #print(f"This is an end state! {d}")
@@ -198,9 +213,9 @@ class Maze:
 
 
 
-with open("d16_test1.txt", "r") as f:
+#with open("d16_test1.txt", "r") as f:
 #with open("d16_test2.txt", "r") as f:
-#with open("d16_input.txt", "r") as f:
+with open("d16_input.txt", "r") as f:
     lines = f.readlines()
 
 maze = Maze(lines)
