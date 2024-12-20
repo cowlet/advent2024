@@ -74,12 +74,12 @@ class Maze:
 
     def solve(self):
 
-        some_best = self._greedy_find()
-        print(f"There are {len(some_best)} best paths with scores {[s.score for s in some_best]}")
+        solns = self._greedy_find()
+        print(f"There are {len(solns)} best paths with scores {[s.score for s in solns]}")
         #print(f"One is:")
         #print(self.draw(some_best[0]))
         # Look for all
-        all_best = self._all_matching(some_best[0].score)
+        all_best = self._all_matching(solns[0])
         print(f"Ends up as {len(all_best)} best paths")
         #all_best = some_best
         uniques = []
@@ -95,15 +95,15 @@ class Maze:
                 cur = cur.parent
         return len(uniques) + 1 # 1 for the start tile
 
-    def _all_matching(self, score):
-        # Find all paths which match score
+    def _all_matching(self, soln):
+        # Find all paths which match soln.score
         others = [self.deer]
         solves = []
 
         while len(others) > 0:
             # Still breadth first, since we know our target now
             cur, others = others[0], others[1:]
-            if cur.score > score:
+            if cur.score > soln.score:
                 print(f"Skipping definitely worse score {cur.score}. "
                       f"{len(others)} others")
                 continue
@@ -115,16 +115,40 @@ class Maze:
                 if not can:
                     continue
                 d = Path(next_i, next_j, m, parent=cur)
-                if d.score > score: # Can't do better
+                if d.score > soln.score: # Can't do better
                     continue
-                # Don't bother discarding others, as we can't tell what is the
-                # correct facing. But discard self if we have been here before.
+                # Discard d if we are in a loop, or if we have been here in
+                # soln with a better score. Inspect others to cut out those
+                # with the same position and facing.
                 seen = False
+                # Loop
                 p = d.parent
                 while p:
                     if p.i == d.i and p.j == d.j:
                         seen = True
                     p = p.parent
+                # In soln: actually check if two steps in a row are the same.
+                # Otherwise, we don't know if we have turned in alignment
+                p = soln
+                while p:
+                    if p.i == d.i and p.j == d.j and p.parent and d.parent and \
+                        p.parent.i == d.parent.i and p.parent.j == p.parent.j and \
+                            p.score < d.score:
+                        seen = True
+                    p = p.parent
+                # Inspect others
+                for other in others:
+                    p = other
+                    while p:
+                        if p.i == d.i and p.j == d.j and p.parent and d.parent and \
+                           p.parent.i == d.parent.i and p.parent.j == p.parent.j:
+                            if d.score < p.score:
+                                others.remove(other)
+                            elif d.score > p.score:
+                                seen = True
+                        p = p.parent
+
+                # If none happened
                 if not seen:
                     others.append(d)
                     if d.at_end(self.end):
@@ -184,9 +208,9 @@ class Maze:
 
 
 
-with open("d16_test1.txt", "r") as f:
+#with open("d16_test1.txt", "r") as f:
 #with open("d16_test2.txt", "r") as f:
-#with open("d16_input.txt", "r") as f:
+with open("d16_input.txt", "r") as f:
     lines = f.readlines()
 
 maze = Maze(lines)
