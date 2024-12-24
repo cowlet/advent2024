@@ -107,8 +107,8 @@ class Maze:
                 print(f"Skipping definitely worse score {cur.score}. "
                       f"{len(others)} others")
                 continue
-            print(self.draw(cur))
-            print(len(others))
+            #print(self.draw(cur))
+            #print(len(others))
 
             for m in "^v<>":
                 can, next_i, next_j = self._can_move(m, cur)
